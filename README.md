@@ -27,3 +27,4 @@ func main() {
 go run *.go
 `
 7. See result in console
+8. For more info about Liqpay visit https://www.liqpay.ua
