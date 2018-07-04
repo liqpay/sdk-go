@@ -7,7 +7,8 @@ Liqpay SDK for golang
 4. Place ``liqpay.go`` file into ``/src/liqpay/`` folder
 5. Make ``any_name.go`` file like this
 
-any_name.go
+``any_name.go``
+
 ```
 package main
 
