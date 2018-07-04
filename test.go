@@ -2,7 +2,7 @@ package main
 
 func main() {
 
-    Init("i42883299811", "T1cBpWrXqjPFiItoQiMyXTwK88mv9baUEqviL47g")
+    Init("public_key", "private_key")
 
     Api("request", map[string]interface{}{
         "action": "agent_info_merchant",
