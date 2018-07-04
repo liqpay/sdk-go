@@ -22,7 +22,7 @@ func main() {
     })   
 }
 ```
-6. Go to src/liqpay/ folder and run command 
+6. Go to ``src/liqpay/`` folder and run command 
 `
 go run *.go
 `
