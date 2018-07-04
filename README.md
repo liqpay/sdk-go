@@ -3,12 +3,12 @@ Liqpay SDK for golang
 
 1. Download release you need
 2. Install golang https://golang.org/doc/install
-3. Create catalog catalog_name/src/liqpay
-4. Place liqpay.go into liqpay/ folder
-5. Make any_name.go file like this
+3. Create catalog ``/src/liqpay``
+4. Place ``liqpay.go`` file into ``/src/liqpay/`` folder
+5. Make ``any_name.go`` file like this
 
 any_name.go
-
+```
 package main
 
 func main() {
@@ -20,6 +20,9 @@ func main() {
         //place here any params you need
     })   
 }
-
-6. Go to src/liqpay/ folder and run command go run *.go
+```
+6. Go to src/liqpay/ folder and run command 
+`
+go run *.go
+`
 7. See result in console
