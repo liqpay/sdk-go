@@ -8,6 +8,8 @@ import (
     "net/http"
     "net/url"
     "crypto/sha1"
+    "html/template"
+    "os"
 )
 import b64 "encoding/base64"
 
@@ -15,6 +17,12 @@ import b64 "encoding/base64"
 var PublicKey  = ""
 var PrivateKey = ""
 var LiqpayURL  = "https://www.liqpay.ua/api/"
+
+
+type DataSignature struct {
+    Data string
+    Signature string 
+}
 
 
 func Init(PubKey string, PrivKey string) {
@@ -28,18 +36,13 @@ func Api(apiUrl string, Data map[string]interface{}) {
     DataBytes, _ := json.Marshal(Data)
     
     DataString := string(DataBytes)
-    fmt.Println(DataString)
+    fmt.Println("JSON:",DataString)
 
-    DataBase64 := b64.StdEncoding.EncodeToString([]byte(DataString))
-    fmt.Println(DataBase64)
+    DataBase64 := MakeData(DataString)
+    fmt.Println("Data:",DataBase64)
 
-    hasher := sha1.New()
-    hasher.Write([]byte(PrivateKey))
-    hasher.Write([]byte(DataBase64))
-    hasher.Write([]byte(PrivateKey))
-
-    SignBase64 := b64.StdEncoding.EncodeToString(hasher.Sum(nil))
-    fmt.Println(SignBase64)
+    SignBase64 := MakeSignature(DataBase64)
+    fmt.Println("Signature:",SignBase64)
 
     form := url.Values{
         "data":      {DataBase64},
@@ -56,6 +59,43 @@ func Api(apiUrl string, Data map[string]interface{}) {
     if err != nil {
         panic(err)
     }
-    fmt.Println(string(body_byte))
+    fmt.Println("Liqpay response:",string(body_byte))
 
+}
+
+
+func Form(Data map[string]interface{}) {
+    
+    DataBytes, _ := json.Marshal(Data)
+    
+    DataString := string(DataBytes)
+    fmt.Println("JSON:",DataString)
+
+    DataBase64 := MakeData(DataString)
+    fmt.Println("Data:",DataBase64)
+
+    SignBase64 := MakeSignature(DataBase64)
+    fmt.Println("Signature:",SignBase64)
+
+    t, _ := template.ParseFiles("liqpay_form.html")
+    t.ExecuteTemplate(os.Stdout, "liqpay_form.html", DataSignature{
+        Data: DataBase64,
+        Signature: SignBase64,
+    })
+
+}
+
+
+func MakeData (Data string) (string) {
+    return b64.StdEncoding.EncodeToString([]byte(Data))
+}
+
+
+func MakeSignature (DataBase64 string) (string) {
+    hasher := sha1.New()
+    hasher.Write([]byte(PrivateKey))
+    hasher.Write([]byte(DataBase64))
+    hasher.Write([]byte(PrivateKey))
+    SignBase64 := b64.StdEncoding.EncodeToString(hasher.Sum(nil))
+    return SignBase64
 }
