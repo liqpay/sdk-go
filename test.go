@@ -6,7 +6,7 @@ func main() {
 
     fmt.Println("Run Init test...")
 
-    Init("i42883299811", "T1cBpWrXqjPFiItoQiMyXTwK88mv9baUEqviL47g")
+    Init("my_public_key", "my_private_key")
 
     fmt.Println("PublicKey =",PublicKey)
     fmt.Println("PrivateKey =",PrivateKey)
