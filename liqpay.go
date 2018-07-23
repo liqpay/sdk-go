@@ -1,101 +1,126 @@
-package main
+package liqpay
 
 import (
-    "encoding/json"
-    "fmt"
-    "bytes"
-    "io/ioutil"
-    "net/http"
-    "net/url"
-    "crypto/sha1"
-    "html/template"
-    "os"
+	"bytes"
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"html/template"
+	"net/http"
+	"net/url"
 )
-import b64 "encoding/base64"
 
+const liqpayURL = "https://www.liqpay.ua/api/"
 
-var PublicKey  = ""
-var PrivateKey = ""
-var LiqpayURL  = "https://www.liqpay.ua/api/"
+var defaultClient = http.Client{}
 
-
-type DataSignature struct {
-    Data string
-    Signature string 
+type formData struct {
+	Data      string
+	Signature string
 }
 
-
-func Init(PubKey string, PrivKey string) {
-    PublicKey  = PubKey
-    PrivateKey = PrivKey
+type Client struct {
+	httpClient *http.Client
+	publicKey  []byte
+	privateKey []byte
 }
 
+type Request map[string]interface{}
 
-func Api(apiUrl string, Data map[string]interface{}) {
-    
-    DataBytes, _ := json.Marshal(Data)
-    
-    DataString := string(DataBytes)
-    fmt.Println("JSON:",DataString)
+type Response map[string]interface{}
 
-    DataBase64 := MakeData(DataString)
-    fmt.Println("Data:",DataBase64)
-
-    SignBase64 := MakeSignature(DataBase64)
-    fmt.Println("Signature:",SignBase64)
-
-    form := url.Values{
-        "data":      {DataBase64},
-        "signature": {SignBase64},
-    }
-
-    body := bytes.NewBufferString(form.Encode())
-    rsp, err := http.Post(LiqpayURL + apiUrl, "application/x-www-form-urlencoded", body)
-    if err != nil {
-        panic(err)
-    }
-    defer rsp.Body.Close()
-    body_byte, err := ioutil.ReadAll(rsp.Body)
-    if err != nil {
-        panic(err)
-    }
-    fmt.Println("Liqpay response:",string(body_byte))
-
+func New(pubKey string, privKey string, client *http.Client) *Client {
+	var c *http.Client
+	if client == nil {
+		c = &defaultClient
+	} else {
+		c = client
+	}
+	return &Client{
+		httpClient: c,
+		publicKey:  []byte(pubKey),
+		privateKey: []byte(privKey),
+	}
 }
 
+func (c Client) Send(apiUrl string, req Request) (Response, error) {
+	req.addMissingPubKey(string(c.publicKey))
 
-func Form(Data map[string]interface{}) {
-    
-    DataBytes, _ := json.Marshal(Data)
-    
-    DataString := string(DataBytes)
-    fmt.Println("JSON:",DataString)
+	encodedJSON, err := req.Encode()
+	if err != nil {
+		return nil, err
+	}
 
-    DataBase64 := MakeData(DataString)
-    fmt.Println("Data:",DataBase64)
+	signature := c.Sign([]byte(encodedJSON))
+	form := url.Values{
+		"data":      {encodedJSON},
+		"signature": {signature},
+	}
 
-    SignBase64 := MakeSignature(DataBase64)
-    fmt.Println("Signature:",SignBase64)
+	reqBody := bytes.NewBufferString(form.Encode())
+	resp, err := http.Post(liqpayURL+apiUrl, "application/x-www-form-urlencoded", reqBody)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var res Response
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return nil, err
+	}
+	errMsg := res["err_description"].(string)
+	if resp.StatusCode != 200 {
+		return res, errors.New(errMsg)
+	} else if res["status"] == "error" {
+		return res, errors.New(errMsg)
+	}
 
-    t, _ := template.ParseFiles("liqpay_form.html")
-    t.ExecuteTemplate(os.Stdout, "liqpay_form.html", DataSignature{
-        Data: DataBase64,
-        Signature: SignBase64,
-    })
-
+	return res, nil
 }
 
+func (c Client) RenderForm(req Request) (string, error) {
+	req.addMissingPubKey(string(c.publicKey))
 
-func MakeData (Data string) (string) {
-    return b64.StdEncoding.EncodeToString([]byte(Data))
+	encodedJSON, err := req.Encode()
+	if err != nil {
+		return "", err
+	}
+
+	signature := c.Sign([]byte(encodedJSON))
+
+	t, err := template.ParseFiles("liqpay_form.html")
+	if err != nil {
+		return "", err
+	}
+	buf := bytes.Buffer{}
+	if err := t.Execute(&buf, formData{
+		Data:      encodedJSON,
+		Signature: signature,
+	}); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
+func (r Request) addMissingPubKey(key string) {
+	if r["public_key"] == key {
+		return
+	}
+	r["public_key"] = key
+}
 
-func MakeSignature (DataBase64 string) (string) {
-    hasher := sha1.New()
-    hasher.Write([]byte(PrivateKey))
-    hasher.Write([]byte(DataBase64))
-    hasher.Write([]byte(PrivateKey))
-    SignBase64 := b64.StdEncoding.EncodeToString(hasher.Sum(nil))
-    return SignBase64
+func (r Request) Encode() (string, error) {
+	obj, err := json.Marshal(r)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(obj), nil
+}
+
+func (c Client) Sign(data []byte) string {
+	hasher := sha1.New()
+	hasher.Write(c.privateKey)
+	hasher.Write(data)
+	hasher.Write(c.privateKey)
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 }
