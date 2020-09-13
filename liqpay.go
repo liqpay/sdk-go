@@ -6,14 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
 )
 
 const liqpayURL = "https://www.liqpay.ua/api/"
-
-var defaultClient = http.Client{}
 
 type formData struct {
 	Data      string
@@ -33,7 +32,7 @@ type Response map[string]interface{}
 func New(pubKey string, privKey string, client *http.Client) *Client {
 	var c *http.Client
 	if client == nil {
-		c = &defaultClient
+		c = &http.Client{}
 	} else {
 		c = client
 	}
@@ -64,15 +63,22 @@ func (c Client) Send(apiUrl string, req Request) (Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("bad response status code, status code is %d", resp.StatusCode))
+	}
+
 	var res Response
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return nil, err
 	}
-	errMsg := res["err_description"].(string)
-	if resp.StatusCode != 200 {
-		return res, errors.New(errMsg)
-	} else if res["status"] == "error" {
-		return res, errors.New(errMsg)
+
+	if res["status"] == "error" {
+		errMsg, ok := res["err_description"].(string)
+		if ok {
+			return nil, errors.New(errMsg)
+		}
+		return nil, errors.New("response body has status error but didn't get error description")
 	}
 
 	return res, nil

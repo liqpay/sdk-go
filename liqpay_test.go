@@ -3,6 +3,7 @@ package liqpay
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"reflect"
 	"testing"
@@ -22,7 +23,7 @@ func TestClient_Send(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    Response
+		want    error
 		wantErr bool
 	}{
 		{
@@ -39,13 +40,7 @@ func TestClient_Send(t *testing.T) {
 					"num": 124.0,
 				},
 			},
-			want: Response{
-				"result":          "error",
-				"status":          "error",
-				"code":            "public_key_not_found",
-				"err_code":        "public_key_not_found",
-				"err_description": "Не найден public_key",
-			},
+			want:    errors.New("Не найден public_key"),
 			wantErr: true,
 		},
 	}
@@ -61,7 +56,7 @@ func TestClient_Send(t *testing.T) {
 				t.Errorf("Client.Send() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(err, tt.want) {
 				t.Errorf("Client.Send() = %v, want %v", got, tt.want)
 			}
 		})
