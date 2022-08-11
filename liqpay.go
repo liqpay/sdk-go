@@ -73,7 +73,7 @@ func (c Client) Send(apiUrl string, req Request) (Response, error) {
 		return nil, err
 	}
 
-	if res["status"] == "error" {
+	if res["status"] == "error" || res["result"] == "error" {
 		errMsg, ok := res["err_description"].(string)
 		if ok {
 			return nil, errors.New(errMsg)
