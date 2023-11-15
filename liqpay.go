@@ -12,11 +12,23 @@ import (
 	"net/url"
 )
 
-const liqpayURL = "https://www.liqpay.ua/api/"
+const (
+	liqpayURL = "https://www.liqpay.ua/api/"
+)
+
+var (
+	allowedLangs = []string{"uk", "ru", "en"}
+	buttonLabel  = map[string]string{
+		"uk": "Сплатити",
+		"en": "Pay",
+		"ru": "Оплатить",
+	}
+)
 
 type formData struct {
 	Data      string
 	Signature string
+	Label     string
 }
 
 type Client struct {
@@ -44,6 +56,7 @@ func New(pubKey string, privKey string, client *http.Client) *Client {
 }
 
 func (c Client) Send(apiUrl string, req Request) (Response, error) {
+	req.checkLang()
 	req.addMissingPubKey(string(c.publicKey))
 
 	encodedJSON, err := req.Encode()
@@ -86,6 +99,7 @@ func (c Client) Send(apiUrl string, req Request) (Response, error) {
 
 func (c Client) RenderForm(req Request) (string, error) {
 	req.addMissingPubKey(string(c.publicKey))
+	req.checkLang()
 
 	encodedJSON, err := req.Encode()
 	if err != nil {
@@ -102,6 +116,7 @@ func (c Client) RenderForm(req Request) (string, error) {
 	if err := t.Execute(&buf, formData{
 		Data:      encodedJSON,
 		Signature: signature,
+		Label:     buttonLabel[req["language"].(string)],
 	}); err != nil {
 		return "", err
 	}
@@ -113,6 +128,19 @@ func (r Request) addMissingPubKey(key string) {
 		return
 	}
 	r["public_key"] = key
+}
+
+func (r Request) checkLang() {
+	lang, contains := r["language"].(string)
+	if contains {
+		for _, allowedLang := range allowedLangs {
+			if lang == allowedLang {
+				return
+			}
+		}
+	}
+
+	r["language"] = "uk"
 }
 
 func (r Request) Encode() (string, error) {
