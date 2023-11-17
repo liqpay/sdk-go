@@ -93,10 +93,11 @@ func TestClient_RenderForm(t *testing.T) {
 				},
 			},
 			want: `<form method="POST" action="https://www.liqpay.ua/api/3/checkout" accept-charset="utf-8">
-    					<input type="hidden" name="data" value="eyJudW0iOjEyNCwicHVibGljX2tleSI6InRlc3RfcHViX2tleSIsInN0ciI6InZhbHVlIn0="/>
-    					<input type="hidden" name="signature" value="9Altos5Ex1c7MX5uoKSrKXFK3mQ="/>
-    					<input type="image" src="https://static.liqpay.ua/buttons/p1ru.radius.png"/>
-					</form>`,
+    <input type="hidden" name="data" value="eyJsYW5ndWFnZSI6InVrIiwibnVtIjoxMjQsInB1YmxpY19rZXkiOiJ0ZXN0X3B1Yl9rZXkiLCJzdHIiOiJ2YWx1ZSJ9"/>
+    <input type="hidden" name="signature" value="TsTas1XVhl79UiuIdlzz0jC5&#43;Xk="/>
+    <script type="text/javascript" src="https://static.liqpay.ua/libjs/sdk_button.js"></script>
+    <sdk-button label="Сплатити" background="#77CC5D" onClick="submit()"></sdk-button>
+</form>`,
 			wantErr: false,
 		},
 	}
