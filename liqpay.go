@@ -12,11 +12,23 @@ import (
 	"net/url"
 )
 
-const liqpayURL = "https://www.liqpay.ua/api/"
+const (
+	liqpayURL = "https://www.liqpay.ua/api/"
+)
+
+var (
+	allowedLangs = []string{"uk", "ru", "en"}
+	buttonLabel  = map[string]string{
+		"uk": "Сплатити",
+		"en": "Pay",
+		"ru": "Оплатить",
+	}
+)
 
 type formData struct {
 	Data      string
 	Signature string
+	Label     string
 }
 
 type Client struct {
@@ -102,6 +114,7 @@ func (c Client) RenderForm(req Request) (string, error) {
 	if err := t.Execute(&buf, formData{
 		Data:      encodedJSON,
 		Signature: signature,
+		Label:     buttonLabel[req.getLang()],
 	}); err != nil {
 		return "", err
 	}
@@ -113,6 +126,19 @@ func (r Request) addMissingPubKey(key string) {
 		return
 	}
 	r["public_key"] = key
+}
+
+func (r Request) getLang() string {
+	lang, contains := r["language"].(string)
+	if contains {
+		for _, allowedLang := range allowedLangs {
+			if lang == allowedLang {
+				return lang
+			}
+		}
+	}
+
+	return "uk"
 }
 
 func (r Request) Encode() (string, error) {

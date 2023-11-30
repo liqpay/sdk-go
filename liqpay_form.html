@@ -1,5 +1,6 @@
 <form method="POST" action="https://www.liqpay.ua/api/3/checkout" accept-charset="utf-8">
     <input type="hidden" name="data" value="{{.Data}}"/>
     <input type="hidden" name="signature" value="{{.Signature}}"/>
-    <input type="image" src="https://static.liqpay.ua/buttons/p1ru.radius.png"/>
+    <script type="text/javascript" src="https://static.liqpay.ua/libjs/sdk_button.js"></script>
+    <sdk-button label="{{.Label}}" background="#77CC5D" onClick="submit()"></sdk-button>
 </form>
