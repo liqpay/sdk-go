@@ -58,7 +58,7 @@ func (c Client) Send(apiUrl string, req Request) (Response, error) {
 	}
 
 	reqBody := bytes.NewBufferString(form.Encode())
-	resp, err := http.Post(liqpayURL+apiUrl, "application/x-www-form-urlencoded", reqBody)
+	resp, err := c.httpClient.Post(liqpayURL+apiUrl, "application/x-www-form-urlencoded", reqBody)
 	if err != nil {
 		return nil, err
 	}
